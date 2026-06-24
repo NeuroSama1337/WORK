@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>NEXUS — 服务器监控控制台</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════ */
+    :root {
+      --bg-void: #06090f;
+      --bg-base: #0b1018;
+      --bg-raised: #111923;
+      --bg-overlay: #1a2435;
+      --bg-hover: #162030;
+      --border-subtle: #1c2736;
+      --border-strong: #2a3a50;
+      
+      --text-primary: #e4eaf2;
+      --text-secondary: #7a8ba3;
+      --text-muted: #4a5568;
+      
+      --accent-teal: #00d4aa;
+      --accent-teal-dim: rgba(0, 212, 170, 0.15);
+      --accent-orange: #ff7a45;
+      --accent-orange-dim: rgba(255, 122, 69, 0.15);
+      --accent-blue: #5b9aff;
+      --status-warning: #ffc244;
+      --status-error: #ff4d6a;
+      --status-online: #00e676;
+      
+      --font-display: 'JetBrains Mono', monospace;
+      --font-body: 'Inter', 'Noto Sans SC', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+      
+      --space-1: 4px; --space-2: 8px; --space-3: 12px;
+      --space-4: 16px; --space-5: 24px; --space-6: 32px;
+      --space-7: 48px; --space-8: 64px;
+      
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+    
+    html {
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-void);
+      color: var(--text-primary);
+      line-height: 1.5;
+      overflow: hidden;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { 
+      background: var(--border-strong); 
+      border-radius: 3px; 
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ═══════════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════════ */
+    .app {
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-5);
+      background: var(--bg-base);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .brand {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .brand-dot {
+      width: 8px; height: 8px;
+      background: var(--accent-teal);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      background: var(--bg-raised);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--status-online);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .demo-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .demo-toggle-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      transition: color var(--duration-fast);
+    }
+
+    .demo-toggle.active .demo-toggle-label {
+      color: var(--accent-orange);
+    }
+
+    .toggle-switch {
+      width: 36px; height: 20px;
+      background: var(--bg-overlay);
+      border-radius: 10px;
+      position: relative;
+      transition: background var(--duration-normal);
+      border: 1px solid var(--border-strong);
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transition: all var(--duration-normal) var(--ease-out);
+    }
+
+    .demo-toggle.active .toggle-switch {
+      background: var(--accent-orange-dim);
+      border-color: var(--accent-orange);
+    }
+
+    .demo-toggle.active .toggle-switch::after {
+      left: 18px;
+      background: var(--accent-orange);
+    }
+
+    .clock {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Mobile menu button */
+    .btn-menu {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    .main {
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      overflow: hidden;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      background: var(--bg-base);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .btn-add {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+
+    .btn-add:hover {
+      background: var(--accent-teal-dim);
+      border-color: var(--accent-teal);
+      color: var(--accent-teal);
+    }
+
+    .device-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-2);
+    }
+
+    .device-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--duration-fast);
+      margin-bottom: 2px;
+    }
+
+    .device-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .device-item.active {
+      background: var(--bg-overlay);
+      border: 1px solid var(--border-strong);
+    }
+
+    .device-item-status {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .device-item-status.online { background: var(--status-online); box-shadow: 0 0 6px var(--status-online); }
+    .device-item-status.offline { background: var(--status-error); }
+    .device-item-status.warning { background: var(--status-warning); box-shadow: 0 0 6px var(--status-warning); }
+
+    .device-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .device-item-name {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .device-item-ip {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    .device-item-latency {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── CENTER CONTENT ─── */
+    .content {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-void);
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .stat-item {
+      background: var(--bg-base);
+      padding: var(--space-4) var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .stat-value.teal { color: var(--accent-teal); }
+    .stat-value.orange { color: var(--accent-orange); }
+    .stat-value.error { color: var(--status-error); }
+
+    /* Demo Banner */
+    .demo-banner {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--accent-orange-dim);
+      border-bottom: 1px solid rgba(255, 122, 69, 0.3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--accent-orange);
+    }
+
+    .demo-banner.visible { display: flex; }
+
+    /* Device Grid */
+    .device-grid-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-5);
+    }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+    }
+
+    /* Device Card */
+    .device-card {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      cursor: pointer;
+      transition: all var(--duration-normal) var(--ease-out);
+      position: relative;
+      overflow: hidden;
+      animation: cardEnter 0.4s var(--ease-out) backwards;
+    }
+
+    .device-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .device-card.selected {
+      border-color: var(--accent-teal);
+      box-shadow: 0 0 0 1px var(--accent-teal), 0 8px 24px rgba(0, 212, 170, 0.1);
+    }
+
+    .device-card.offline {
+      opacity: 0.5;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .card-hostname {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .card-ip {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .card-status-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .card-status-badge.online {
+      background: rgba(0, 230, 118, 0.1);
+      color: var(--status-online);
+    }
+    .card-status-badge.offline {
+      background: rgba(255, 77, 106, 0.1);
+      color: var(--status-error);
+    }
+    .card-status-badge.warning {
+      background: rgba(255, 194, 68, 0.1);
+      color: var(--status-warning);
+    }
+
+    .card-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .metric-value {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-value small {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: var(--bg-overlay);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s var(--ease-out);
+    }
+
+    .progress-fill.low { background: var(--accent-teal); }
+    .progress-fill.mid { background: var(--status-warning); }
+    .progress-fill.high { background: var(--status-error); }
+
+    .card-sparkline {
+      margin-top: var(--space-3);
+      padding-top: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .sparkline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2);
+    }
+
+    .sparkline-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .sparkline-value {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-teal);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sparkline-canvas {
+      width: 100%;
+      height: 32px;
+      display: block;
+    }
+
+    /* ─── RIGHT PANEL ─── */
+    .panel {
+      background: var(--bg-base);
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-section {
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .panel-header {
+      padding: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+
+    /* Detail Panel */
+    .detail-content {
+      padding: 0 var(--space-4) var(--space-4);
+    }
+
+    .detail-empty {
+      padding: var(--space-7) var(--space-4);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .detail-device-name {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .detail-device-ip {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: var(--space-4);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+    }
+
+    .detail-metric {
+      background: var(--bg-raised);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+    }
+
+    .detail-metric-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: var(--space-1);
+    }
+
+    .detail-metric-value {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .detail-metric-value small {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .detail-bar {
+      margin-top: var(--space-2);
+    }
+
+    .btn-remove-device {
+      width: 100%;
+      margin-top: var(--space-4);
+      padding: var(--space-2);
+      background: rgba(255, 77, 106, 0.1);
+      border: 1px solid rgba(255, 77, 106, 0.3);
+      border-radius: var(--radius-md);
+      color: var(--status-error);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+
+    .btn-remove-device:hover {
+      background: rgba(255, 77, 106, 0.2);
+    }
+
+    /* Console Log */
+    .console-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .console-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-3) var(--space-4);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.8;
+    }
+
+    .log-entry {
+      display: flex;
+      gap: var(--space-2);
+      animation: logSlide 0.3s var(--ease-out);
+    }
+
+    .log-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .log-level {
+      flex-shrink: 0;
+      font-weight: 600;
+      width: 36px;
+    }
+
+    .log-level.info { color: var(--accent-blue); }
+    .log-level.warn { color: var(--status-warning); }
+    .log-level.error { color: var(--status-error); }
+    .log-level.success { color: var(--status-online); }
+
+    .log-msg {
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 9, 15, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-raised);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      width: 400px;
+      max-width: 90vw;
+      animation: modalEnter 0.3s var(--ease-out);
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: var(--space-5);
+    }
+
+    .form-group {
+      margin-bottom: var(--space-4);
+    }
+
+    .form-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-base);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--duration-fast);
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-teal);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: var(--space-3);
+      justify-content: flex-end;
+      margin-top: var(--space-6);
+    }
+
+    .btn {
+      padding: var(--space-2) var(--space-5);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      border: 1px solid transparent;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--border-strong);
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-overlay);
+      color: var(--text-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent-teal);
+      color: var(--bg-void);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    /* ─── MOBILE BOTTOM SHEET ─── */
+    .mobile-drawer {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-base);
+      border-top: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      z-index: 500;
+      transform: translateY(100%);
+      transition: transform var(--duration-normal) var(--ease-out);
+      max-height: 70vh;
+      overflow: hidden;
+    }
+
+    .mobile-drawer.open {
+      transform: translateY(0);
+    }
+
+    .drawer-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border-strong);
+      border-radius: 2px;
+      margin: var(--space-3) auto;
+    }
+
+    .drawer-content {
+      padding: 0 var(--space-4) var(--space-4);
+      overflow-y: auto;
+      max-height: calc(70vh - 30px);
+    }
+
+    /* Mobile FAB */
+    .mobile-fab {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      background: var(--accent-teal);
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0, 212, 170, 0.3);
+      cursor: pointer;
+      z-index: 400;
+      color: var(--bg-void);
+    }
+
+    /* ═══════════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════════ */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    @keyframes cardEnter {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes logSlide {
+      from {
+        opacity: 0;
+        transform: translateX(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes modalEnter {
+      from {
+        opacity: 0;
+        transform: scale(0.95) translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .cursor-blink::after {
+      content: '█';
+      animation: blink 1s step-end infinite;
+      color: var(--accent-teal);
+      margin-left: 2px;
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE — TABLET
+    ═══════════════════════════════════════════ */
+    @media (max-width: 1023px) {
+      .main {
+        grid-template-columns: 220px 1fr;
+      }
+      .panel {
+        display: none;
+      }
+      .mobile-fab {
+        display: flex;
+      }
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE — MOBILE (20:9 aspect)
+    ═══════════════════════════════════════════ */
+    @media (max-width: 767px) {
+      .header {
+        padding: 0 var(--space-4);
+      }
+      
+      .connection-status {
+        display: none;
+      }
+      
+      .demo-toggle-label {
+        display: none;
+      }
+      
+      .clock {
+        display: none;
+      }
+      
+      .main {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        display: none;
+      }
+      
+      .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .stat-item {
+        padding: var(--space-3) var(--space-4);
+      }
+      
+      .stat-value {
+        font-size: 22px;
+      }
+      
+      .device-grid-wrapper {
+        padding: var(--space-4);
+      }
+      
+      .device-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+      }
+      
+      .device-card {
+        padding: var(--space-3);
+      }
+      
+      .mobile-drawer {
+        display: block;
+      }
+      
+      .mobile-fab {
+        display: flex;
+      }
+      
+      .modal {
+        width: 95vw;
+        padding: var(--space-5);
+      }
+    }
+
+    /* ═══════════════════════════════════════════
+       REDUCED MOTION
+    ═══════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- ═══ HEADER ═══ -->
+    <header class="header">
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-dot"></div>
+          NEXUS
+        </div>
+        <div class="connection-status">
+          <div class="status-dot"></div>
+          <span>已连接</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="demo-toggle" id="demoToggle">
+          <span class="demo-toggle-label">演示模式</span>
+          <div class="toggle-switch"></div>
+        </div>
+        <div class="clock" id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <!-- ═══ MAIN ═══ -->
+    <div class="main">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <span class="sidebar-title">节点列表</span>
+          <button class="btn-add" id="btnAdd" title="添加设备">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+        <div class="device-list" id="deviceList"></div>
+      </aside>
+
+      <!-- CENTER -->
+      <main class="content">
+        <div class="demo-banner" id="demoBanner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          演示模式已开启 — 数据为模拟生成
+        </div>
+        
+        <div class="stats-bar">
+          <div class="stat-item">
+            <span class="stat-label">设备总数</span>
+            <span class="stat-value" id="statTotal">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">在线</span>
+            <span class="stat-value teal" id="statOnline">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">离线</span>
+            <span class="stat-value error" id="statOffline">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">平均延迟</span>
+            <span class="stat-value orange" id="statLatency">—<small>ms</small></span>
+          </div>
+        </div>
+
+        <div class="device-grid-wrapper">
+          <div class="device-grid" id="deviceGrid"></div>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL (Desktop) -->
+      <aside class="panel">
+        <div class="panel-section">
+          <div class="panel-header">
+            <span class="panel-title">设备详情</span>
+          </div>
+          <div class="detail-content" id="detailContent">
+            <div class="detail-empty">选择一个节点查看详情</div>
+          </div>
+        </div>
+
+        <div class="console-section">
+          <div class="panel-header">
+            <span class="panel-title">控制台</span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);" id="logCount">0 条</span>
+          </div>
+          <div class="console-log" id="consoleLog">
+            <div class="log-entry">
+              <span class="log-time">--:--:--</span>
+              <span class="log-level info">系统</span>
+              <span class="log-msg cursor-blink">等待连接</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ═══ MOBILE BOTTOM DRAWER ═══ -->
+  <div class="mobile-drawer" id="mobileDrawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-content" id="drawerContent">
+      <!-- Dynamic content -->
+    </div>
+  </div>
+
+  <!-- ═══ MOBILE FAB ═══ -->
+  <div class="mobile-fab" id="mobileFab">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+  </div>
+
+  <!-- ═══ ADD DEVICE MODAL ═══ -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-title">添加新节点</div>
+      <div class="form-group">
+        <label class="form-label">主机名</label>
+        <input type="text" class="form-input" id="inputHostname" placeholder="例如: web-prod-07">
+      </div>
+      <div class="form-group">
+        <label class="form-label">IP 地址</label>
+        <input type="text" class="form-input" id="inputIP" placeholder="例如: 10.0.3.47">
+      </div>
+      <div class="form-group">
+        <label class="form-label">区域</label>
+        <input type="text" class="form-input" id="inputRegion" placeholder="例如: cn-beijing">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btnCancel">取消</button>
+        <button class="btn btn-primary" id="btnConfirm">添加节点</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════
+    //  DATA & STATE
+    // ═══════════════════════════════════════════
+    const state = {
+      devices: [],
+      selectedDeviceId: null,
+      demoMode: false,
+      demoInterval: null,
+      updateInterval: null,
+      logEntries: [],
+      nextId: 1,
+      deviceElements: new Map() // Cache DOM elements for incremental updates
+    };
+
+    const REGIONS = ['cn-beijing', 'cn-shanghai', 'cn-guangzhou', 'cn-chengdu', 'ap-southeast-1', 'us-west-1'];
+    const OS_TYPES = ['Ubuntu 22.04', 'Debian 12', 'CentOS 9', 'Anolis OS 8', 'Rocky Linux 9', 'OpenCloudOS 8'];
+    const PREFIXES = ['web', 'api', 'db', 'cache', 'worker', 'proxy', 'monitor', 'queue', 'auth', 'storage', 'gateway', 'log'];
+
+    // ═══════════════════════════════════════════
+    //  UTILITY FUNCTIONS
+    // ═══════════════════════════════════════════
+    function randomIP() {
+      return `10.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+    }
+
+    function randomFrom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function formatTime(date) {
+      return date.toTimeString().slice(0, 8);
+    }
+
+    function randomWalk(current, min, max, volatility = 0.15) {
+      const change = (Math.random() - 0.5) * 2 * volatility * (max - min);
+      let next = current + change;
+      const mid = (min + max) / 2;
+      next += (mid - next) * 0.02;
+      return Math.max(min, Math.min(max, next));
+    }
+
+    function generateHostname() {
+      return `${randomFrom(PREFIXES)}-${String(state.nextId).padStart(2, '0')}`;
+    }
+
+    function createDevice(overrides = {}) {
+      const id = `dev-${state.nextId++}`;
+      const baseLatency = 5 + Math.random() * 80;
+      return {
+        id,
+        hostname: overrides.hostname || generateHostname(),
+        ip: overrides.ip || randomIP(),
+        region: overrides.region || randomFrom(REGIONS),
+        os: randomFrom(OS_TYPES),
+        status: 'online',
+        cpu: 10 + Math.random() * 40,
+        memory: 20 + Math.random() * 50,
+        disk: 15 + Math.random() * 60,
+        latency: baseLatency,
+        latencyHistory: Array.from({length: 30}, () => baseLatency + (Math.random() - 0.5) * 20),
+        uptime: `${Math.floor(Math.random() * 365)}天 ${Math.floor(Math.random() * 24)}时`,
+        lastSeen: Date.now(),
+        ...overrides
+      };
+    }
+
+    function getLevel(val) {
+      if (val < 60) return 'low';
+      if (val < 85) return 'mid';
+      return 'high';
+    }
+
+    function getStatusText(status) {
+      const map = { online: '在线', offline: '离线', warning: '告警' };
+      return map[status] || status;
+    }
+
+    // ═══════════════════════════════════════════
+    //  INCREMENTAL RENDERING (No Flicker)
+    // ═══════════════════════════════════════════
+    
+    // Full render only when device list changes
+    function renderDeviceList() {
+      const list = document.getElementById('deviceList');
+      list.innerHTML = state.devices.map(d => `
+        <div class="device-item ${d.id === state.selectedDeviceId ? 'active' : ''}" 
+             data-id="${d.id}" onclick="selectDevice('${d.id}')">
+          <div class="device-item-status ${d.status}"></div>
+          <div class="device-item-info">
+            <div class="device-item-name">${d.hostname}</div>
+            <div class="device-item-ip">${d.ip}</div>
+          </div>
+          <div class="device-item-latency" data-field="latency-${d.id}">${d.status === 'online' ? Math.round(d.latency) + 'ms' : '—'}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderDeviceGrid() {
+      const grid = document.getElementById('deviceGrid');
+      grid.innerHTML = state.devices.map((d, i) => `
+        <div class="device-card ${d.status === 'offline' ? 'offline' : ''} ${d.id === state.selectedDeviceId ? 'selected' : ''}" 
+             data-id="${d.id}" onclick="selectDevice('${d.id}')"
+             style="animation-delay: ${i * 0.05}s">
+          <div class="card-header">
+            <div>
+              <div class="card-hostname">${d.hostname}</div>
+              <div class="card-ip">${d.ip} · ${d.region}</div>
+            </div>
+            <div class="card-status-badge ${d.status}" data-field="status-${d.id}">
+              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;
+                ${d.status === 'online' ? 'box-shadow:0 0 4px currentColor;' : ''}"></span>
+              ${getStatusText(d.status)}
+            </div>
+          </div>
+          <div class="card-metrics">
+            <div class="metric">
+              <span class="metric-label">CPU</span>
+              <span class="metric-value" data-field="cpu-${d.id}">${Math.round(d.cpu)}<small>%</small></span>
+              <div class="progress-bar">
+                <div class="progress-fill ${getLevel(d.cpu)}" data-field="cpu-bar-${d.id}" style="width:${d.cpu}%"></div>
+              </div>
+            </div>
+            <div class="metric">
+              <span class="metric-label">内存</span>
+              <span class="metric-value" data-field="mem-${d.id}">${Math.round(d.memory)}<small>%</small></span>
+              <div class="progress-bar">
+                <div class="progress-fill ${getLevel(d.memory)}" data-field="mem-bar-${d.id}" style="width:${d.memory}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-sparkline">
+            <div class="sparkline-header">
+              <span class="sparkline-label">网络延迟</span>
+              <span class="sparkline-value" data-field="lat-${d.id}">${Math.round(d.latency)}ms</span>
+            </div>
+            <canvas class="sparkline-canvas" id="spark-${d.id}" height="32"></canvas>
+          </div>
+        </div>
+      `).join('');
+
+      // Draw sparklines
+      state.devices.forEach(d => drawSparkline(d));
+    }
+
+    // Incremental update: only change text/values, no DOM rebuild
+    function updateDeviceValues() {
+      state.devices.forEach(d => {
+        // Update card values
+        const cpuEl = document.querySelector(`[data-field="cpu-${d.id}"]`);
+        const memEl = document.querySelector(`[data-field="mem-${d.id}"]`);
+        const latEl = document.querySelector(`[data-field="lat-${d.id}"]`);
+        const cpuBar = document.querySelector(`[data-field="cpu-bar-${d.id}"]`);
+        const memBar = document.querySelector(`[data-field="mem-bar-${d.id}"]`);
+        const statusEl = document.querySelector(`[data-field="status-${d.id}"]`);
+        const sidebarLat = document.querySelector(`[data-field="latency-${d.id}"]`);
+
+        if (cpuEl) cpuEl.innerHTML = `${Math.round(d.cpu)}<small>%</small>`;
+        if (memEl) memEl.innerHTML = `${Math.round(d.memory)}<small>%</small>`;
+        if (latEl) latEl.textContent = `${Math.round(d.latency)}ms`;
+        if (cpuBar) {
+          cpuBar.style.width = `${d.cpu}%`;
+          cpuBar.className = `progress-fill ${getLevel(d.cpu)}`;
+        }
+        if (memBar) {
+          memBar.style.width = `${d.memory}%`;
+          memBar.className = `progress-fill ${getLevel(d.memory)}`;
+        }
+        if (statusEl) {
+          statusEl.className = `card-status-badge ${d.status}`;
+          statusEl.innerHTML = `<span style="width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;
+            ${d.status === 'online' ? 'box-shadow:0 0 4px currentColor;' : ''}"></span>${getStatusText(d.status)}`;
+        }
+        if (sidebarLat) {
+          sidebarLat.textContent = d.status === 'online' ? `${Math.round(d.latency)}ms` : '—';
+        }
+
+        // Update sparkline
+        drawSparkline(d);
+      });
+
+      // Update stats
+      updateStats();
+      
+      // Update detail panel if selected
+      if (state.selectedDeviceId) {
+        updateDetailValues();
+      }
+    }
+
+    function updateStats() {
+      const total = state.devices.length;
+      const online = state.devices.filter(d => d.status === 'online' || d.status === 'warning').length;
+      const offline = state.devices.filter(d => d.status === 'offline').length;
+      const onlineDevices = state.devices.filter(d => d.status === 'online' || d.status === 'warning');
+      const avgLat = onlineDevices.length > 0 
+        ? Math.round(onlineDevices.reduce((s, d) => s + d.latency, 0) / onlineDevices.length)
+        : null;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statOnline').textContent = online;
+      document.getElementById('statOffline').textContent = offline;
+      document.getElementById('statLatency').innerHTML = avgLat !== null 
+        ? `${avgLat}<small>ms</small>` : '—<small>ms</small>';
+    }
+
+    function renderDetail() {
+      const container = document.getElementById('detailContent');
+      const device = state.devices.find(d => d.id === state.selectedDeviceId);
+      
+      if (!device) {
+        container.innerHTML = '<div class="detail-empty">选择一个节点查看详情</div>';
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="detail-device-name">${device.hostname}</div>
+        <div class="detail-device-ip">${device.ip} · ${device.region}</div>
+        <div class="detail-grid">
+          <div class="detail-metric">
+            <div class="detail-metric-label">CPU 负载</div>
+            <div class="detail-metric-value" data-detail="cpu">${Math.round(device.cpu)}<small>%</small></div>
+            <div class="detail-bar">
+              <div class="progress-bar" style="height:4px;">
+                <div class="progress-fill ${getLevel(device.cpu)}" data-detail="cpu-bar" style="width:${device.cpu}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-metric">
+            <div class="detail-metric-label">内存</div>
+            <div class="detail-metric-value" data-detail="mem">${Math.round(device.memory)}<small>%</small></div>
+            <div class="detail-bar">
+              <div class="progress-bar" style="height:4px;">
+                <div class="progress-fill ${getLevel(device.memory)}" data-detail="mem-bar" style="width:${device.memory}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-metric">
+            <div class="detail-metric-label">磁盘</div>
+            <div class="detail-metric-value" data-detail="disk">${Math.round(device.disk)}<small>%</small></div>
+            <div class="detail-bar">
+              <div class="progress-bar" style="height:4px;">
+                <div class="progress-fill ${getLevel(device.disk)}" data-detail="disk-bar" style="width:${device.disk}%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-metric">
+            <div class="detail-metric-label">延迟</div>
+            <div class="detail-metric-value" data-detail="lat">${Math.round(device.latency)}<small>ms</small></div>
+          </div>
+          <div class="detail-metric">
+            <div class="detail-metric-label">运行时间</div>
+            <div class="detail-metric-value" style="font-size:14px;" data-detail="uptime">${device.uptime}</div>
+          </div>
+          <div class="detail-metric">
+            <div class="detail-metric-label">操作系统</div>
+            <div class="detail-metric-value" style="font-size:11px;">${device.os}</div>
+          </div>
+        </div>
+        <button class="btn-remove-device" onclick="removeDevice('${device.id}')">删除此节点</button>
+      `;
+    }
+
+    function updateDetailValues() {
+      const device = state.devices.find(d => d.id === state.selectedDeviceId);
+      if (!device) return;
+
+      const cpuEl = document.querySelector('[data-detail="cpu"]');
+      const memEl = document.querySelector('[data-detail="mem"]');
+      const diskEl = document.querySelector('[data-detail="disk"]');
+      const latEl = document.querySelector('[data-detail="lat"]');
+      const cpuBar = document.querySelector('[data-detail="cpu-bar"]');
+      const memBar = document.querySelector('[data-detail="mem-bar"]');
+      const diskBar = document.querySelector('[data-detail="disk-bar"]');
+
+      if (cpuEl) cpuEl.innerHTML = `${Math.round(device.cpu)}<small>%</small>`;
+      if (memEl) memEl.innerHTML = `${Math.round(device.memory)}<small>%</small>`;
+      if (diskEl) diskEl.innerHTML = `${Math.round(device.disk)}<small>%</small>`;
+      if (latEl) latEl.innerHTML = `${Math.round(device.latency)}<small>ms</small>`;
+      if (cpuBar) {
+        cpuBar.style.width = `${device.cpu}%`;
+        cpuBar.className = `progress-fill ${getLevel(device.cpu)}`;
+      }
+      if (memBar) {
+        memBar.style.width = `${device.memory}%`;
+        memBar.className = `progress-fill ${getLevel(device.memory)}`;
+      }
+      if (diskBar) {
+        diskBar.style.width = `${device.disk}%`;
+        diskBar.className = `progress-fill ${getLevel(device.disk)}`;
+      }
+    }
+
+    function drawSparkline(device) {
+      const canvas = document.getElementById(`spark-${device.id}`);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return;
+      
+      canvas.width = rect.width * 2;
+      canvas.height = 64;
+      ctx.scale(2, 2);
+
+      const data = device.latencyHistory;
+      const w = rect.width;
+      const h = 32;
+      const min = Math.min(...data) * 0.8;
+      const max = Math.max(...data) * 1.2;
+      const range = max - min || 1;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, h);
+      gradient.addColorStop(0, 'rgba(0, 212, 170, 0.2)');
+      gradient.addColorStop(1, 'rgba(0, 212, 170, 0)');
+
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      data.forEach((val, i) => {
+        const x = (i / (data.length - 1)) * w;
+        const y = h - ((val - min) / range) * (h - 4) - 2;
+        ctx.lineTo(x, y);
+      });
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      ctx.beginPath();
+      data.forEach((val, i) => {
+        const x = (i / (data.length - 1)) * w;
+        const y = h - ((val - min) / range) * (h - 4) - 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#00d4aa';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const lastX = w;
+      const lastY = h - ((data[data.length - 1] - min) / range) * (h - 4) - 2;
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#00d4aa';
+      ctx.fill();
+    }
+
+    // ═══════════════════════════════════════════
+    //  INTERACTIONS
+    // ═══════════════════════════════════════════
+    function selectDevice(id) {
+      state.selectedDeviceId = id;
+      
+      // Update active states without full re-render
+      document.querySelectorAll('.device-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.id === id);
+      });
+      document.querySelectorAll('.device-card').forEach(el => {
+        el.classList.toggle('selected', el.dataset.id === id);
+      });
+      
+      renderDetail();
+      
+      // On mobile, open drawer with detail
+      if (window.innerWidth < 1024) {
+        openMobileDrawer();
+      }
+    }
+
+    function removeDevice(id) {
+      const device = state.devices.find(d => d.id === id);
+      if (!device) return;
+      
+      state.devices = state.devices.filter(d => d.id !== id);
+      addLog('warn', `节点 ${device.hostname} 已移除`);
+      
+      if (state.selectedDeviceId === id) {
+        state.selectedDeviceId = null;
+      }
+      
+      renderDeviceList();
+      renderDeviceGrid();
+      renderDetail();
+      updateStats();
+    }
+
+    function addLog(level, msg) {
+      const log = document.getElementById('consoleLog');
+      const levelMap = { info: '信息', warn: '警告', error: '错误', success: '成功' };
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `
+        <span class="log-time">${formatTime(new Date())}</span>
+        <span class="log-level ${level}">${levelMap[level] || level}</span>
+        <span class="log-msg">${msg}</span>
+      `;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+      state.logEntries.push({ level, msg, time: Date.now() });
+      document.getElementById('logCount').textContent = `${state.logEntries.length} 条`;
+      
+      while (log.children.length > 200) {
+        log.removeChild(log.firstChild);
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    //  SIMULATION ENGINE
+    // ═══════════════════════════════════════════
+    function updateMetrics() {
+      state.devices.forEach(d => {
+        if (d.status === 'offline') return;
+        
+        const volatility = state.demoMode ? 0.15 : 0.08;
+        d.cpu = randomWalk(d.cpu, 5, 95, volatility);
+        d.memory = randomWalk(d.memory, 10, 95, 0.04);
+        d.disk = randomWalk(d.disk, 10, 90, 0.02);
+        d.latency = randomWalk(d.latency, 2, 200, state.demoMode ? 0.2 : 0.12);
+        
+        d.latencyHistory.push(d.latency);
+        if (d.latencyHistory.length > 30) d.latencyHistory.shift();
+
+        if (d.cpu > 90 || d.latency > 150) {
+          if (d.status !== 'warning') {
+            d.status = 'warning';
+            addLog('warn', `${d.hostname} — ${d.cpu > 90 ? 'CPU 负载过高' : '延迟异常'}`);
+          }
+        } else if (d.status === 'warning' && d.cpu < 80 && d.latency < 120) {
+          d.status = 'online';
+          addLog('info', `${d.hostname} — 指标恢复正常`);
+        }
+      });
+      
+      // Incremental update instead of full re-render
+      updateDeviceValues();
+    }
+
+    function demoTick() {
+      if (state.devices.length < 24 && Math.random() < 0.15) {
+        const device = createDevice();
+        state.devices.push(device);
+        addLog('success', `节点 ${device.hostname} (${device.ip}) 已连接，区域: ${device.region}`);
+        renderDeviceList();
+        renderDeviceGrid();
+        updateStats();
+      }
+
+      if (state.devices.length > 0 && Math.random() < 0.05) {
+        const d = randomFrom(state.devices);
+        if (d.status === 'online' || d.status === 'warning') {
+          d.status = 'offline';
+          addLog('error', `${d.hostname} — 连接中断`);
+        } else {
+          d.status = 'online';
+          d.latency = 10 + Math.random() * 30;
+          addLog('success', `${d.hostname} — 重新连接`);
+        }
+        renderDeviceList();
+        renderDeviceGrid();
+        updateStats();
+      }
+
+      if (Math.random() < 0.08) {
+        const events = [
+          () => { const d = randomFrom(state.devices.filter(x => x.status !== 'offline')); if(d) addLog('info', `${d.hostname} — 健康检查通过 [200 OK]`); },
+          () => { const d = randomFrom(state.devices.filter(x => x.status !== 'offline')); if(d) addLog('info', `${d.hostname} — 证书续期已计划`); },
+          () => { const d = randomFrom(state.devices.filter(x => x.status !== 'offline')); if(d) addLog('warn', `${d.hostname} — 磁盘使用率超过 80%`); },
+          () => { addLog('info', `集群心跳 — ${state.devices.filter(x=>x.status==='online' || x.status==='warning').length}/${state.devices.length} 节点响应正常`); },
+        ];
+        randomFrom(events)();
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    //  DEMO MODE TOGGLE
+    // ═══════════════════════════════════════════
+    function toggleDemoMode() {
+      state.demoMode = !state.demoMode;
+      const toggle = document.getElementById('demoToggle');
+      const banner = document.getElementById('demoBanner');
+      
+      toggle.classList.toggle('active', state.demoMode);
+      banner.classList.toggle('visible', state.demoMode);
+
+      if (state.demoMode) {
+        addLog('info', '演示模式已激活 — 正在生成模拟节点');
+        const initialCount = 6 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < initialCount; i++) {
+          setTimeout(() => {
+            const device = createDevice();
+            state.devices.push(device);
+            addLog('success', `节点 ${device.hostname} (${device.ip}) 已上线`);
+            renderDeviceList();
+            renderDeviceGrid();
+            updateStats();
+          }, i * 400);
+        }
+        state.demoInterval = setInterval(demoTick, 2000);
+      } else {
+        addLog('info', '演示模式已关闭');
+        clearInterval(state.demoInterval);
+      }
+    }
+
+    // ═══════════════════════════════════════════
+    //  MOBILE DRAWER
+    // ═══════════════════════════════════════════
+    function openMobileDrawer() {
+      const drawer = document.getElementById('mobileDrawer');
+      const content = document.getElementById('drawerContent');
+      const device = state.devices.find(d => d.id === state.selectedDeviceId);
+      
+      if (!device) {
+        content.innerHTML = '<div class="detail-empty">选择一个节点查看详情</div>';
+      } else {
+        content.innerHTML = `
+          <div class="panel-header">
+            <span class="panel-title">设备详情</span>
+          </div>
+          <div class="detail-device-name">${device.hostname}</div>
+          <div class="detail-device-ip">${device.ip} · ${device.region}</div>
+          <div class="detail-grid">
+            <div class="detail-metric">
+              <div class="detail-metric-label">CPU 负载</div>
+              <div class="detail-metric-value" data-detail="cpu">${Math.round(device.cpu)}<small>%</small></div>
+              <div class="detail-bar">
+                <div class="progress-bar" style="height:4px;">
+                  <div class="progress-fill ${getLevel(device.cpu)}" data-detail="cpu-bar" style="width:${device.cpu}%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="detail-metric">
+              <div class="detail-metric-label">内存</div>
+              <div class="detail-metric-value" data-detail="mem">${Math.round(device.memory)}<small>%</small></div>
+              <div class="detail-bar">
+                <div class="progress-bar" style="height:4px;">
+                  <div class="progress-fill ${getLevel(device.memory)}" data-detail="mem-bar" style="width:${device.memory}%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="detail-metric">
+              <div class="detail-metric-label">磁盘</div>
+              <div class="detail-metric-value" data-detail="disk">${Math.round(device.disk)}<small>%</small></div>
+              <div class="detail-bar">
+                <div class="progress-bar" style="height:4px;">
+                  <div class="progress-fill ${getLevel(device.disk)}" data-detail="disk-bar" style="width:${device.disk}%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="detail-metric">
+              <div class="detail-metric-label">延迟</div>
+              <div class="detail-metric-value" data-detail="lat">${Math.round(device.latency)}<small>ms</small></div>
+            </div>
+            <div class="detail-metric">
+              <div class="detail-metric-label">运行时间</div>
+              <div class="detail-metric-value" style="font-size:14px;">${device.uptime}</div>
+            </div>
+            <div class="detail-metric">
+              <div class="detail-metric-label">操作系统</div>
+              <div class="detail-metric-value" style="font-size:11px;">${device.os}</div>
+            </div>
+          </div>
+          <button class="btn-remove-device" onclick="removeDevice('${device.id}')">删除此节点</button>
+        `;
+      }
+      
+      drawer.classList.add('open');
+    }
+
+    function closeMobileDrawer() {
+      document.getElementById('mobileDrawer').classList.remove('open');
+    }
+
+    // ═══════════════════════════════════════════
+    //  CLOCK
+    // ═══════════════════════════════════════════
+    function updateClock() {
+      document.getElementById('clock').textContent = formatTime(new Date());
+    }
+
+    // ═══════════════════════════════════════════
+    //  MODAL
+    // ═══════════════════════════════════════════
+    function openModal() {
+      document.getElementById('modalOverlay').classList.add('visible');
+      document.getElementById('inputHostname').focus();
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('visible');
+      document.getElementById('inputHostname').value = '';
+      document.getElementById('inputIP').value = '';
+      document.getElementById('inputRegion').value = '';
+    }
+
+    function confirmAddDevice() {
+      const hostname = document.getElementById('inputHostname').value.trim();
+      const ip = document.getElementById('inputIP').value.trim();
+      const region = document.getElementById('inputRegion').value.trim();
+
+      if (!hostname || !ip) return;
+
+      const device = createDevice({
+        hostname,
+        ip: ip || randomIP(),
+        region: region || randomFrom(REGIONS)
+      });
+      state.devices.push(device);
+      addLog('success', `节点 ${device.hostname} (${device.ip}) 已手动添加`);
+      closeModal();
+      renderDeviceList();
+      renderDeviceGrid();
+      updateStats();
+    }
+
+    // ═══════════════════════════════════════════
+    //  INITIALIZATION
+    // ═══════════════════════════════════════════
+    function init() {
+      document.getElementById('demoToggle').addEventListener('click', toggleDemoMode);
+      document.getElementById('btnAdd').addEventListener('click', openModal);
+      document.getElementById('mobileFab').addEventListener('click', openModal);
+      document.getElementById('btnCancel').addEventListener('click', closeModal);
+      document.getElementById('btnConfirm').addEventListener('click', confirmAddDevice);
+      document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+      });
+
+      // Mobile drawer swipe down to close
+      const drawer = document.getElementById('mobileDrawer');
+      let startY = 0;
+      drawer.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+      });
+      drawer.addEventListener('touchmove', (e) => {
+        const diff = e.touches[0].clientY - startY;
+        if (diff > 50) closeMobileDrawer();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeModal();
+          closeMobileDrawer();
+        }
+      });
+
+      // Initial devices
+      const initialDevices = [
+        createDevice({ hostname: 'web-prod-01', ip: '10.0.1.10', region: 'cn-beijing' }),
+        createDevice({ hostname: 'web-prod-02', ip: '10.0.1.11', region: 'cn-beijing' }),
+        createDevice({ hostname: 'api-gateway-01', ip: '10.0.2.20', region: 'cn-shanghai' }),
+        createDevice({ hostname: 'db-primary', ip: '10.0.3.5', region: 'cn-beijing' }),
+        createDevice({ hostname: 'db-replica-01', ip: '10.0.3.6', region: 'cn-guangzhou' }),
+        createDevice({ hostname: 'cache-redis-01', ip: '10.0.4.10', region: 'cn-beijing' }),
+        createDevice({ hostname: 'worker-batch-01', ip: '10.0.5.30', region: 'cn-chengdu' }),
+        createDevice({ hostname: 'monitor-grafana', ip: '10.0.6.2', region: 'cn-beijing' }),
+      ];
+      
+      initialDevices[4].status = 'offline';
+      state.devices = initialDevices;
+      
+      addLog('info', 'NEXUS 控制台 v2.5.0 已初始化');
+      addLog('success', `${initialDevices.filter(d => d.status === 'online').length} 个节点已连接`);
+      addLog('warn', `${initialDevices[4].hostname} — 无法连接 (超时 5000ms)`);
+
+      renderDeviceList();
+      renderDeviceGrid();
+      renderDetail();
+      updateStats();
+      updateClock();
+      
+      setInterval(updateClock, 1000);
+      setInterval(updateMetrics, 1500);
+    }
+
+    window.addEventListener('resize', () => {
+      state.devices.forEach(d => drawSparkline(d));
+    });
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
+
