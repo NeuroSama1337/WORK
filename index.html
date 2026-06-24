@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NeuroCloud · 图片标注工具</title>
+<style>
+  :root {
+    --theme_text-primary: #181d26;
+    --theme_text-secondary: #333333;
+    --theme_text-weak: rgba(4, 14, 32, 0.69);
+    --theme_text-inverse: #ffffff;
+
+    --theme_surface-primary: #ffffff;
+    --theme_surface-subtle: #f8fafc;
+    --theme_surface-accent: #1b61c9;
+    --theme_surface-accent-hover: #1754b3;
+    --theme_surface-accent-active: #13469a;
+
+    --theme_border-default: #e0e2e6;
+    --theme_border-strong: #c8ccd2;
+
+    --theme_danger-text: #b42318;
+    --theme_danger-surface: #fef3f2;
+
+    --theme_accent-blue-soft: rgba(27, 97, 201, 0.08);
+    --theme_accent-blue-stroke: rgba(27, 97, 201, 0.35);
+
+    --theme_shadow-blue:
+      rgba(0, 0, 0, 0.32) 0px 0px 1px,
+      rgba(0, 0, 0, 0.08) 0px 0px 2px,
+      rgba(45, 127, 249, 0.28) 0px 1px 3px;
+    --theme_shadow-soft:
+      rgba(15, 48, 106, 0.05) 0px 0px 20px;
+    --theme_shadow-card:
+      rgba(0, 0, 0, 0.04) 0px 1px 2px,
+      rgba(0, 0, 0, 0.03) 0px 0px 0px 1px;
+
+    --radius-xs: 2px;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+
+    --font-primary: "Haas", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-display: "Haas Groot Disp", "Haas", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: var(--font-primary);
+    background: var(--theme_surface-subtle);
+    color: var(--theme_text-primary);
+    font-size: 14px;
+    letter-spacing: 0.14px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    touch-action: none;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Header */
+  .header {
+    background: var(--theme_surface-primary);
+    border-bottom: 1px solid var(--theme_border-default);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #1b61c9 0%, #254fad 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: var(--theme_shadow-blue);
+    flex-shrink: 0;
+  }
+
+  .brand-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--theme_text-primary);
+    letter-spacing: -0.1px;
+    white-space: nowrap;
+  }
+
+  .brand-subtitle {
+    font-size: 12px;
+    color: var(--theme_text-weak);
+    letter-spacing: 0.2px;
+    margin-left: 12px;
+    padding-left: 12px;
+    border-left: 1px solid var(--theme_border-default);
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .brand-subtitle { display: inline; }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--font-primary);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.08px;
+    line-height: 1.3;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .btn-primary {
+    background: var(--theme_surface-accent);
+    color: var(--theme_text-inverse);
+    box-shadow: var(--theme_shadow-blue);
+  }
+  .btn-primary:hover { background: var(--theme_surface-accent-hover); }
+  .btn-primary:active { background: var(--theme_surface-accent-active); transform: translateY(0.5px); }
+
+  .btn-secondary {
+    background: var(--theme_surface-primary);
+    color: var(--theme_text-primary);
+    border-color: var(--theme_border-default);
+  }
+  .btn-secondary:hover { background: var(--theme_surface-subtle); border-color: var(--theme-border-strong); }
+
+  .btn-danger {
+    background: var(--theme_surface-primary);
+    color: var(--theme_danger-text);
+    border-color: var(--theme_border-default);
+  }
+  .btn-danger:hover { background: var(--theme_danger-surface); border-color: #f5c2c0; }
+
+  .btn .icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  input[type="file"] { display: none; }
+
+  /* Workspace */
+  .workspace {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: var(--theme_surface-primary);
+    border-right: 1px solid var(--theme_border-default);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--theme_border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sidebar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme_text-weak);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--theme_text-inverse);
+    background: var(--theme_surface-accent);
+    padding: 2px 8px;
+    border-radius: 10px;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  .image-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .image-list::-webkit-scrollbar { width: 6px; }
+  .image-list::-webkit-scrollbar-track { background: transparent; }
+  .image-list::-webkit-scrollbar-thumb { background: var(--theme_border-default); border-radius: 3px; }
+
+  .image-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+  }
+
+  .image-item:hover {
+    background: var(--theme_surface-subtle);
+  }
+
+  .image-item.active {
+    background: var(--theme_accent-blue-soft);
+    border-color: var(--theme_accent-blue-stroke);
+  }
+
+  .image-item-thumb {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-xs);
+    background: var(--theme_surface-subtle);
+    border: 1px solid var(--theme_border-default);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .image-item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .image-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .image-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--theme_text-primary);
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .image-item-meta {
+    font-size: 11px;
+    color: var(--theme_text-weak);
+    letter-spacing: 0.2px;
+    margin-top: 2px;
+  }
+
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--theme_text-weak);
+  }
+
+  .empty-state-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme_text-secondary);
+    margin-bottom: 4px;
+    letter-spacing: 0.1px;
+  }
+
+  .empty-state-desc {
+    font-size: 12px;
+    line-height: 1.5;
+    letter-spacing: 0.14px;
+  }
+
+  /* Canvas */
+  .canvas-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+    background: var(--theme_surface-subtle);
+  }
+
+  .canvas-toolbar {
+    padding: 10px 18px;
+    background: var(--theme_surface-primary);
+    border-bottom: 1px solid var(--theme_border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .canvas-hint {
+    font-size: 12px;
+    color: var(--theme_text-weak);
+    letter-spacing: 0.18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .canvas-hint-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--theme_surface-accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .canvas-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--theme_text-secondary);
+    letter-spacing: 0.14px;
+  }
+
+  .canvas-stat strong {
+    font-weight: 600;
+    color: var(--theme_text-primary);
+    margin-right: 4px;
+  }
+
+  .canvas-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .canvas-viewport.drag-over {
+    background: var(--theme_accent-blue-soft);
+  }
+
+  .canvas-viewport.drag-over::after {
+    content: '释放以导入图片';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--theme_surface-accent);
+    color: white;
+    padding: 16px 32px;
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    box-shadow: var(--theme_shadow-blue);
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .canvas-wrapper {
+    position: relative;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--theme_shadow-card);
+    background: var(--theme_surface-primary);
+    overflow: hidden;
+  }
+
+  #canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    cursor: crosshair;
+  }
+
+  .annotation-box {
+    position: absolute;
+    border: 2px solid var(--theme_surface-accent);
+    background: var(--theme_accent-blue-soft);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-radius: 2px;
+  }
+
+  .annotation-box:hover {
+    background: rgba(27, 97, 201, 0.18);
+  }
+
+  .annotation-box::before {
+    content: attr(data-label);
+    position: absolute;
+    top: -20px;
+    left: -2px;
+    background: var(--theme_surface-accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .canvas-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    color: var(--theme_text-weak);
+  }
+
+  .canvas-placeholder-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--theme_text-primary);
+    margin-bottom: 6px;
+    letter-spacing: 0.1px;
+  }
+
+  .canvas-placeholder-desc {
+    font-size: 13px;
+    letter-spacing: 0.18px;
+    max-width: 320px;
+    line-height: 1.5;
+  }
+
+  /* Footer */
+  .footer {
+    background: var(--theme_surface-primary);
+    border-top: 1px solid var(--theme_border-default);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--theme_text-weak);
+    letter-spacing: 0.18px;
+    flex-shrink: 0;
+  }
+
+  .footer-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #2e7d32;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--theme_text-primary);
+    color: var(--theme_text-inverse);
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    letter-spacing: 0.14px;
+    box-shadow: var(--theme_shadow-blue);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 1000;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .header { padding: 12px 16px; }
+    .brand-title { font-size: 15px; }
+    .btn { padding: 7px 12px; font-size: 13px; }
+    .btn .label { display: none; }
+    .btn .icon { font-size: 16px; }
+    .sidebar { width: 200px; }
+    .canvas-viewport { padding: 16px; }
+    .canvas-toolbar { padding: 8px 14px; }
+    .footer { padding: 8px 16px; }
+  }
+
+  @media (max-width: 640px) {
+    .workspace { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      max-height: 130px;
+      border-right: none;
+      border-bottom: 1px solid var(--theme_border-default);
+    }
+    .sidebar-header { padding: 10px 14px 8px; }
+    .image-list {
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
+      gap: 6px;
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+    .image-item {
+      flex-shrink: 0;
+      min-width: 140px;
+      margin-bottom: 0;
+    }
+    .canvas-viewport { padding: 12px; }
+    .canvas-stats { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="header">
+    <div class="brand">
+      <div class="brand-mark">N</div>
+      <span class="brand-title">NeuroCloud</span>
+      <span class="brand-subtitle">Image Bounding Box Tool</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <span class="label">导入图片</span>
+      </button>
+      <input type="file" id="fileInput" multiple accept="image/*">
+      <button class="btn btn-danger" onclick="clearAnnotations()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+        </svg>
+        <span class="label">清除</span>
+      </button>
+      <button class="btn btn-primary" onclick="exportData()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span class="label">导出 JSON</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Images</span>
+        <span class="sidebar-count" id="imageCount">0</span>
+      </div>
+      <div class="image-list" id="imageList">
+        <div class="empty-state">
+          <div class="empty-state-title">暂无图片</div>
+          <div class="empty-state-desc">点击「导入图片」或拖拽图片到此处<br>支持批量导入多张图片</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="canvas-stage">
+      <div class="canvas-toolbar">
+        <div class="canvas-hint">
+          <span class="canvas-hint-dot"></span>
+          <span id="hintText">按住鼠标拖动绘制标注框 · 点击框可删除</span>
+        </div>
+        <div class="canvas-stats">
+          <div class="canvas-stat"><strong id="statSize">—</strong>尺寸</div>
+          <div class="canvas-stat"><strong id="statCount">0</strong>标注</div>
+        </div>
+      </div>
+
+      <div class="canvas-viewport" id="canvasViewport">
+        <div class="canvas-placeholder" id="placeholder">
+          <div class="canvas-placeholder-title">开始你的标注工作</div>
+          <div class="canvas-placeholder-desc">导入图片后，在画布上按住鼠标或手指拖动即可绘制边界框。<br>支持批量导入与拖拽导入，可导出 JSON 格式标注数据。</div>
+        </div>
+        <div class="canvas-wrapper" id="canvasWrapper" style="display:none;">
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-status">
+      <span class="status-dot"></span>
+      <span id="footerText">就绪 · 等待导入</span>
+    </div>
+    <div>© 2026 NeuroCloud</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const state = {
+    images: [],
+    annotations: {},
+    currentIndex: -1,
+    drawing: false,
+    startX: 0, startY: 0
+  };
+
+  const $ = id => document.getElementById(id);
+  const canvas = $('canvas');
+  const ctx = canvas.getContext('2d');
+  const canvasWrapper = $('canvasWrapper');
+  const canvasViewport = $('canvasViewport');
+  const placeholder = $('placeholder');
+  const imageList = $('imageList');
+  const imageCount = $('imageCount');
+  const fileInput = $('fileInput');
+  const toast = $('toast');
+  const footerText = $('footerText');
+  const statSize = $('statSize');
+  const statCount = $('statCount');
+
+  // File Import
+  fileInput.addEventListener('change', e => {
+    const files = Array.from(e.target.files).filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    loadFiles(files);
+    fileInput.value = '';
+  });
+
+  function loadFiles(files) {
+    let loaded = 0;
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          state.images.push({
+            filename: file.name,
+            src: ev.target.result,
+            width: img.width,
+            height: img.height,
+            img
+          });
+          if (!state.annotations[file.name]) state.annotations[file.name] = [];
+          loaded++;
+          if (loaded === files.length) {
+            renderImageList();
+            if (state.currentIndex < 0) selectImage(0);
+            showToast(`已导入 ${files.length} 张图片`);
+            footerText.textContent = `就绪 · 共 ${state.images.length} 张图片`;
+          }
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Drag & Drop
+  canvasViewport.addEventListener('dragover', e => {
+    e.preventDefault();
+    canvasViewport.classList.add('drag-over');
+  });
+
+  canvasViewport.addEventListener('dragleave', e => {
+    e.preventDefault();
+    canvasViewport.classList.remove('drag-over');
+  });
+
+  canvasViewport.addEventListener('drop', e => {
+    e.preventDefault();
+    canvasViewport.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length) loadFiles(files);
+  });
+
+  // Image List
+  function renderImageList() {
+    imageCount.textContent = state.images.length;
+    if (state.images.length === 0) {
+      imageList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-title">暂无图片</div>
+          <div class="empty-state-desc">点击「导入图片」或拖拽图片到此处<br>支持批量导入多张图片</div>
+        </div>`;
+      return;
+    }
+    imageList.innerHTML = '';
+    state.images.forEach((img, i) => {
+      const count = (state.annotations[img.filename] || []).length;
+      const item = document.createElement('div');
+      item.className = 'image-item' + (i === state.currentIndex ? ' active' : '');
+      item.innerHTML = `
+        <div class="image-item-thumb"><img src="${img.src}" alt=""></div>
+        <div class="image-item-info">
+          <div class="image-item-name">${img.filename}</div>
+          <div class="image-item-meta">${count} 个标注 · ${img.width}×${img.height}</div>
+        </div>`;
+      item.onclick = () => selectImage(i);
+      imageList.appendChild(item);
+    });
+  }
+
+  // Select Image
+  function selectImage(index) {
+    if (index < 0 || index >= state.images.length) return;
+    state.currentIndex = index;
+    const img = state.images[index];
+
+    placeholder.style.display = 'none';
+    canvasWrapper.style.display = 'block';
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.drawImage(img.img, 0, 0);
+
+    statSize.textContent = `${img.width}×${img.height}`;
+    renderAnnotations();
+    renderImageList();
+    footerText.textContent = `当前：${img.filename}`;
+  }
+
+  // Annotations
+  function renderAnnotations() {
+    document.querySelectorAll('.annotation-box').forEach(el => el.remove());
+    if (state.currentIndex < 0) return;
+    const img = state.images[state.currentIndex];
+    const boxes = state.annotations[img.filename] || [];
+    statCount.textContent = boxes.length;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = rect.width / canvas.width;
+    const scaleY = rect.height / canvas.height;
+
+    boxes.forEach((b, i) => {
+      const div = document.createElement('div');
+      div.className = 'annotation-box';
+      div.dataset.label = `#${i + 1}`;
+      div.style.left = (b.x * canvas.width * scaleX) + 'px';
+      div.style.top = (b.y * canvas.height * scaleY) + 'px';
+      div.style.width = (b.w * canvas.width * scaleX) + 'px';
+      div.style.height = (b.h * canvas.height * scaleY) + 'px';
+      div.onclick = e => { e.stopPropagation(); deleteAnnotation(i); };
+      canvasWrapper.appendChild(div);
+    });
+  }
+
+  function deleteAnnotation(i) {
+    if (state.currentIndex < 0) return;
+    const img = state.images[state.currentIndex];
+    state.annotations[img.filename].splice(i, 1);
+    renderAnnotations();
+    renderImageList();
+    showToast('已删除标注');
+  }
+
+  function clearAnnotations() {
+    if (state.currentIndex < 0) { showToast('请先选择图片'); return; }
+    const img = state.images[state.currentIndex];
+    if (!state.annotations[img.filename].length) { showToast('当前图片无标注'); return; }
+    if (!confirm(`确定清除「${img.filename}」的所有标注？`)) return;
+    state.annotations[img.filename] = [];
+    renderAnnotations();
+    renderImageList();
+    showToast('已清除所有标注');
+  }
+
+  // Drawing
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const t = e.touches ? e.touches[0] : e;
+    return {
+      x: (t.clientX - rect.left) * scaleX,
+      y: (t.clientY - rect.top) * scaleY
+    };
+  }
+
+  function startDraw(e) {
+    if (state.currentIndex < 0) return;
+    e.preventDefault();
+    state.drawing = true;
+    const p = getPos(e);
+    state.startX = p.x; state.startY = p.y;
+  }
+
+  function moveDraw(e) {
+    if (!state.drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    const img = state.images[state.currentIndex];
+    ctx.drawImage(img.img, 0, 0);
+    const x = Math.min(state.startX, p.x);
+    const y = Math.min(state.startY, p.y);
+    const w = Math.abs(p.x - state.startX);
+    const h = Math.abs(p.y - state.startY);
+    ctx.strokeStyle = '#1b61c9';
+    ctx.lineWidth = Math.max(2, canvas.width / 500);
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(27, 97, 201, 0.08)';
+    ctx.fillRect(x, y, w, h);
+  }
+
+  function endDraw(e) {
+    if (!state.drawing) return;
+    state.drawing = false;
+    const p = getPos(e.changedTouches ? e.changedTouches[0] ? {touches:[e.changedTouches[0]]} : e : e);
+    const endX = p.x, endY = p.y;
+    const x = Math.min(state.startX, endX) / canvas.width;
+    const y = Math.min(state.startY, endY) / canvas.height;
+    const w = Math.abs(endX - state.startX) / canvas.width;
+    const h = Math.abs(endY - state.startY) / canvas.height;
+    if (w < 0.008 || h < 0.008) { selectImage(state.currentIndex); return; }
+    const img = state.images[state.currentIndex];
+    state.annotations[img.filename].push({x, y, w, h});
+    renderAnnotations();
+    renderImageList();
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  canvas.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('mouseleave', e => { if (state.drawing) endDraw(e); });
+  canvas.addEventListener('touchstart', startDraw, {passive: false});
+  canvas.addEventListener('touchmove', moveDraw, {passive: false});
+  canvas.addEventListener('touchend', endDraw, {passive: false});
+
+  window.addEventListener('resize', () => {
+    if (state.currentIndex >= 0) {
+      setTimeout(renderAnnotations, 50);
+    }
+  });
+
+  // Export - Fixed for mobile
+  function exportData() {
+    if (!state.images.length) { showToast('请先导入图片'); return; }
+    
+    const data = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      totalImages: state.images.length,
+      totalAnnotations: Object.values(state.annotations).reduce((s, a) => s + a.length, 0),
+      images: state.images.map(img => ({
+        filename: img.filename,
+        width: img.width,
+        height: img.height,
+        annotations: (state.annotations[img.filename] || []).map(a => ({
+          x: +a.x.toFixed(6),
+          y: +a.y.toFixed(6),
+          width: +a.w.toFixed(6),
+          height: +a.h.toFixed(6)
+        }))
+      }))
+    };
+    
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], {type: 'application/json;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `annotations_${Date.now()}.json`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+    
+    showToast(`已导出 ${data.totalAnnotations} 条标注`);
+  }
+
+  // Toast
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  // Prevent scroll
+  document.addEventListener('touchmove', e => {
+    if (e.target.closest('.canvas-viewport') || e.target === canvas) e.preventDefault();
+  }, {passive: false});
+</script>
+</body>
+</html>
+
